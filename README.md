@@ -74,3 +74,8 @@ Windows 10 x64 (no x86 support)
    - Now there should be no error in our project.
    - To make it play a video when we click "Local Windows Debugger", we need to add an argument to our debug command.
      Project Property: "Configuration Properties" -> "Debugging" -> "Command Arguments": `$(Your_Video_File_Path)`
+
+## Reference
+- https://www.pianshen.com/article/38081048616/
+- https://blog.csdn.net/Tui_GuiGe/article/details/90320224
+- https://zhuanlan.zhihu.com/p/205156264
