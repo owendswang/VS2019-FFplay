@@ -54,10 +54,19 @@ Windows 10 x64 (no x86 support)
    1. Right click our project "FFplay" and click "Add" -> "Existing item...". And select all 4 files we copied ("config.h", "ffplay.c", "cmdutils.h", "cmdutils.c").
    2. Set project property:
       - "Configuration": `Debug`; "Platform": `x64`
-      - "C/C++" -> "General" -> "Additional Include Directories": `$(ProjectDir)include;%(AdditionalIncludeDirectories)`
+      - "C/C++" -> "General" -> "Additional Include Directories":
+        ```
+        $(ProjectDir)include;%(AdditionalIncludeDirectories)
+        ```
       - "C/C++" -> "General" -> "SDL checks": `No (/sdl-)`
-      - "Linker" -> "General" -> "Additional Library Directories": `$(ProjectDir)lib;%(AdditionalLibraryDirectories)`
-      - "Linker" -> "General" -> "Additional Dependencies": `avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;SDL2.lib;SDL2main.lib;SDL2test.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)`
+      - "Linker" -> "General" -> "Additional Library Directories":
+        ```
+        $(ProjectDir)lib;%(AdditionalLibraryDirectories)
+        ```
+      - "Linker" -> "General" -> "Additional Dependencies":
+        ```
+        avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;SDL2.lib;SDL2main.lib;SDL2test.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)
+        ```
    3. Tweak source code:
       - "cmdutils.c": Comment out all the lines related with "avresample". This function is deprecated and not enabled in the FFmpeg lib we use. Basically everything marked as error.
       - "ffplay.c": Replace `#include <SDL.h>` with `#include "SDL2/SDL.h"`. And replace `#include <SDL_thread.h>` with `#include "SDL2/SDL_thread.h"`.
