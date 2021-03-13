@@ -142,8 +142,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cmdutils.c" />
-    <ClCompile Include="ffplay.c" />
+    <ClCompile Include="cmdutils.cpp" />
+    <ClCompile Include="ffplay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cmdutils.h" />

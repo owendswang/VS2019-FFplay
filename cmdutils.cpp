@@ -30,11 +30,13 @@
    references to libraries that are not being built. */
 
 #include "config.h"
+
+extern "C" {
 #include "compat/va_copy.h"
 #include "libavformat/avformat.h"
 #include "libavfilter/avfilter.h"
 #include "libavdevice/avdevice.h"
-// #include "libavresample/avresample.h"
+    // #include "libavresample/avresample.h"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
 #include "libpostproc/postprocess.h"
@@ -54,6 +56,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/ffversion.h"
 #include "libavutil/version.h"
+}
+
 #include "cmdutils.h"
 #if HAVE_SYS_RESOURCE_H
 #include <sys/time.h>
@@ -62,6 +66,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
 
 static int init_report(const char *env);
 
@@ -119,7 +124,7 @@ void init_dynload(void)
 #if HAVE_SETDLLDIRECTORY && defined(_WIN32)
     /* Calling SetDllDirectory with the empty string (but not NULL) removes the
      * current working directory from the DLL search path as a security pre-caution. */
-    SetDllDirectory("");
+    SetDllDirectory(L"");
 #endif
 }
 
@@ -200,15 +205,15 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
     printf("\n");
 }
 
-void show_help_children(const AVClass *class, int flags)
+void show_help_children(const AVClass *class_, int flags)
 {
     const AVClass *child = NULL;
-    if (class->option) {
-        av_opt_show2(&class, NULL, flags, 0);
+    if (class_->option) {
+        av_opt_show2(&class_, NULL, flags, 0);
         printf("\n");
     }
 
-    while (child = av_opt_child_class_next(class, child))
+    while (child = av_opt_child_class_next(class_, child))
         show_help_children(child, flags);
 }
 
@@ -263,7 +268,7 @@ static void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
         buffsize += WideCharToMultiByte(CP_UTF8, 0, argv_w[i], -1,
                                         NULL, 0, NULL, NULL);
 
-    win32_argv_utf8 = av_mallocz(sizeof(char *) * (win32_argc + 1) + buffsize);
+    win32_argv_utf8 = (char**)av_mallocz(sizeof(char *) * (win32_argc + 1) + buffsize);
     argstr_flat     = (char *)win32_argv_utf8 + sizeof(char *) * (win32_argc + 1);
     if (!win32_argv_utf8) {
         LocalFree(argv_w);
@@ -289,8 +294,7 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 }
 #endif /* HAVE_COMMANDLINETOARGVW */
 
-static int write_option(void *optctx, const OptionDef *po, const char *opt,
-                        const char *arg)
+static int write_option(void *optctx, const OptionDef *po, const char *opt, const char *arg)
 {
     /* new-style options contain an offset into optctx, old-style address of
      * a global var*/
@@ -299,12 +303,12 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     int *dstcount;
 
     if (po->flags & OPT_SPEC) {
-        SpecifierOpt **so = dst;
-        char *p = strchr(opt, ':');
+        SpecifierOpt **so = (SpecifierOpt**)dst;
+        char *p = (char*)strchr(opt, ':');
         char *str;
 
         dstcount = (int *)(so + 1);
-        *so = grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
+        *so = (SpecifierOpt*)grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
         str = av_strdup(p ? p + 1 : "");
         if (!str)
             return AVERROR(ENOMEM);
@@ -332,9 +336,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     } else if (po->u.func_arg) {
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR,
-                   "Failed to set value '%s' for option '%s': %s\n",
-                   arg, opt, av_err2str(ret));
+            av_log(NULL, AV_LOG_ERROR, "Failed to set value '%s' for option '%s': %s\n", arg, opt, av_make_error_string({ 0 }, 64, ret));
             return ret;
         }
     }
@@ -471,7 +473,7 @@ static void dump_argument(const char *a)
 {
     const unsigned char *p;
 
-    for (p = a; *p; p++)
+    for (p = (const unsigned char *)a; *p; p++)
         if (!((*p >= '+' && *p <= ':') || (*p >= '@' && *p <= 'Z') ||
               *p == '_' || (*p >= 'a' && *p <= 'z')))
             break;
@@ -480,7 +482,7 @@ static void dump_argument(const char *a)
         return;
     }
     fputc('"', report_file);
-    for (p = a; *p; p++) {
+    for (p = (const unsigned char*)a; *p; p++) {
         if (*p == '\\' || *p == '"' || *p == '$' || *p == '`')
             fprintf(report_file, "\\%c", *p);
         else if (*p < ' ' || *p > '~')
@@ -662,7 +664,7 @@ static void finish_group(OptionParseContext *octx, int group_idx,
     OptionGroupList *l = &octx->groups[group_idx];
     OptionGroup *g;
 
-    GROW_ARRAY(l->groups, l->nb_groups);
+    l->groups = (OptionGroup*)grow_array(l->groups, sizeof(*l->groups), &l->nb_groups, l->nb_groups + 1);
     g = &l->groups[l->nb_groups - 1];
 
     *g             = octx->cur_group;
@@ -693,7 +695,7 @@ static void add_opt(OptionParseContext *octx, const OptionDef *opt,
     int global = !(opt->flags & (OPT_PERFILE | OPT_SPEC | OPT_OFFSET));
     OptionGroup *g = global ? &octx->global_opts : &octx->cur_group;
 
-    GROW_ARRAY(g->opts, g->nb_opts);
+    g->opts = (Option*)grow_array(g->opts, sizeof(*g->opts), &g->nb_opts, g->nb_opts + 1);
     g->opts[g->nb_opts - 1].opt = opt;
     g->opts[g->nb_opts - 1].key = key;
     g->opts[g->nb_opts - 1].val = val;
@@ -708,7 +710,7 @@ static void init_parse_context(OptionParseContext *octx,
     memset(octx, 0, sizeof(*octx));
 
     octx->nb_groups = nb_groups;
-    octx->groups    = av_mallocz_array(octx->nb_groups, sizeof(*octx->groups));
+    octx->groups = (OptionGroupList*)av_mallocz_array(octx->nb_groups, sizeof(*octx->groups));
     if (!octx->groups)
         exit_program(1);
 
@@ -944,14 +946,13 @@ end:
     return 0;
 }
 
-static void expand_filename_template(AVBPrint *bp, const char *template,
-                                     struct tm *tm)
+static void expand_filename_template(AVBPrint *bp, const char *template_, struct tm *tm)
 {
     int c;
 
-    while ((c = *(template++))) {
+    while ((c = *(template_++))) {
         if (c == '%') {
-            if (!(c = *(template++)))
+            if (!(c = *(template_++)))
                 break;
             switch (c) {
             case 'p':
@@ -990,9 +991,7 @@ static int init_report(const char *env)
     while (env && *env) {
         if ((ret = av_opt_get_key_value(&env, "=", ":", 0, &key, &val)) < 0) {
             if (count)
-                av_log(NULL, AV_LOG_ERROR,
-                       "Failed to parse FFREPORT environment variable: %s\n",
-                       av_err2str(ret));
+                av_log(NULL, AV_LOG_ERROR, "Failed to parse FFREPORT environment variable: %s\n", av_make_error_string({ 0 }, 64, ret));
             break;
         }
         if (*env)
@@ -1018,8 +1017,7 @@ static int init_report(const char *env)
     }
 
     av_bprint_init(&filename, 0, AV_BPRINT_SIZE_AUTOMATIC);
-    expand_filename_template(&filename,
-                             av_x_if_null(filename_template, "%p-%t.log"), tm);
+    expand_filename_template(&filename, (const char*)av_x_if_null(filename_template, "%p-%t.log"), tm);
     av_free(filename_template);
     if (!av_bprint_is_complete(&filename)) {
         av_log(NULL, AV_LOG_ERROR, "Out of memory building report file name\n");
@@ -1507,8 +1505,8 @@ static const AVCodec *next_codec_for_id(enum AVCodecID id, void **iter,
 
 static int compare_codec_desc(const void *a, const void *b)
 {
-    const AVCodecDescriptor * const *da = a;
-    const AVCodecDescriptor * const *db = b;
+    const AVCodecDescriptor * const *da = (const AVCodecDescriptor* const*)a;
+    const AVCodecDescriptor * const *db = (const AVCodecDescriptor* const*)b;
 
     return (*da)->type != (*db)->type ? FFDIFFSIGN((*da)->type, (*db)->type) :
            strcmp((*da)->name, (*db)->name);
@@ -1522,7 +1520,7 @@ static unsigned get_codecs_sorted(const AVCodecDescriptor ***rcodecs)
 
     while ((desc = avcodec_descriptor_next(desc)))
         nb_codecs++;
-    if (!(codecs = av_calloc(nb_codecs, sizeof(*codecs)))) {
+    if (!(codecs = (const AVCodecDescriptor**)av_calloc(nb_codecs, sizeof(*codecs)))) {
         av_log(NULL, AV_LOG_ERROR, "Out of memory\n");
         exit_program(1);
     }
@@ -1810,7 +1808,7 @@ int show_sample_fmts(void *optctx, const char *opt, const char *arg)
     int i;
     char fmt_str[128];
     for (i = -1; i < AV_SAMPLE_FMT_NB; i++)
-        printf("%s\n", av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), i));
+        printf("%s\n", av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), (AVSampleFormat)i));
     return 0;
 }
 
@@ -2166,7 +2164,7 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
 
     if (!s->nb_streams)
         return NULL;
-    opts = av_mallocz_array(s->nb_streams, sizeof(*opts));
+    opts = (AVDictionary**)av_mallocz_array(s->nb_streams, sizeof(*opts));
     if (!opts) {
         av_log(NULL, AV_LOG_ERROR,
                "Could not alloc memory for stream options.\n");
@@ -2178,14 +2176,14 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
     return opts;
 }
 
-void *grow_array(void *array, int elem_size, int *size, int new_size)
+void* grow_array(void *array, int elem_size, int *size, int new_size)
 {
     if (new_size >= INT_MAX / elem_size) {
         av_log(NULL, AV_LOG_ERROR, "Array too big.\n");
         exit_program(1);
     }
     if (*size < new_size) {
-        uint8_t *tmp = av_realloc_array(array, new_size, elem_size);
+        uint8_t *tmp = (uint8_t*)av_realloc_array(array, new_size, elem_size);
         if (!tmp) {
             av_log(NULL, AV_LOG_ERROR, "Could not alloc buffer.\n");
             exit_program(1);

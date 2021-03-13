@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ffplay.c">
+    <ClCompile Include="ffplay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cmdutils.c">
+    <ClCompile Include="cmdutils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
