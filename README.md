@@ -81,4 +81,4 @@ Windows 10 x64 (no x86 support)
 - https://zhuanlan.zhihu.com/p/205156264
 
 ## License
-Everything I created would follow MIT. But when you add FFmpeg and SDL2, please follow their licenses and copyrights.
+Everything I created would follow MIT. But everything related with FFmpeg and SDL2, please follow their licenses and copyrights.
