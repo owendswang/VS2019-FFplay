@@ -49,7 +49,11 @@ Windows 10 x64 (no x86 support)
    5. From the SDL2 build ".zip" file, unpack all the files in "include" folder to "include/SDL2" folder in our project folder.
       And unpack all the "lib" files from "lib/x64" folder to "lib" folder in our project folder.
       And unpack the "dll" file from "lib/x64" folder to "x64/Debug" folder in our project folder.
-   6. Copy the "config.h" file from FFmpeg source file to our project folder. And copy the "ffplay.c", "cmdutils.h", "cmdutils.c" from "fftools" folder in the source files to our project foler.
+   6. Copy some files from source files:
+      - Copy the "config.h" file from FFmpeg source file to our project folder.
+	  - Copy the "ffplay.c", "cmdutils.h", "cmdutils.c" from "fftools" folder in the source files to our project foler.
+	  - Copy all the ".h" files from the "compact" folder to "include/compact" folder in our project folder.
+	  - Copy all the ".h" files from the "libavutil" folder to "include/libavutil" folder in our project folder, but don't override those files already exists.
 3. Modify our "FFplay" project:
    1. Right click our project "FFplay" and click "Add" -> "Existing item...". And select all 4 files we copied ("config.h", "ffplay.c", "cmdutils.h", "cmdutils.c").
    2. Set project property:
