@@ -2,7 +2,7 @@
 FFplay built with Visual Studio 2019
 
 ## Introduction
-This is a VS2019 C++ project of ffplay. But according to the complicated issues with licenses and copyrights, I didn't include any FFmpeg and SDL2 lib files. I only uploaded those source files I modified (Please follow their LGPL and GPL license when you use them). But you could add them by yourself according to the instructions below. So this repository only contains VS project and solution files.
+This is a VS2019 C++ project of ffplay. But according to the complicated issues with licenses and copyrights, I didn't include any FFmpeg and SDL2 lib files. I only uploaded those source files I modified (Please follow their LGPL and GPL license when you use them). But you could add them by yourself according to the instructions below.
 
 ## Versions
 - Source Files:            FFmpeg-n4.3.2
