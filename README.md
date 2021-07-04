@@ -4,6 +4,12 @@ FFplay built with Visual Studio 2019
 ## Introduction
 This is a VS2019 C++ project of ffplay. But according to the complicated issues with licenses and copyrights, I didn't include any FFmpeg and SDL2 lib files. I only uploaded those source files I modified (Please follow their LGPL and GPL license when you use them). But you could add them by yourself according to the instructions below.
 
+## Extra Features
+1. Press 'B' to togle window borderless;
+2. Press '[' and ']' to shrink and enlarge window size;
+3. Press ',' and '.' to tune window transparency;
+4. In borderless mode, you could drag window while holding left mouse button down.
+
 ## Versions
 - Source Files:            FFmpeg-n4.3.2
 - FFmpeg Windows build:    ffmpeg-4.3.2-2021-02-27-full_build-shared
