@@ -326,7 +326,7 @@ static const char* wanted_stream_spec[AVMEDIA_TYPE_NB] = { 0 };
 static int seek_by_bytes = -1;
 static float seek_interval = 10;
 static int display_disable;
-static int borderless;
+static int borderless = 1;
 static int alwaysontop;
 static int startup_volume = 100;
 static int show_status = -1;
@@ -373,7 +373,7 @@ static SDL_RendererInfo renderer_info = { 0 };
 static SDL_AudioDeviceID audio_dev;
 
 static int is_hidden = 0;
-static int is_dragging = 0;
+static float opacity = 1;
 
 static const struct TextureFormatEntry {
     enum AVPixelFormat format;
@@ -1561,32 +1561,12 @@ static void update_volume(VideoState* is, int sign, double step)
 
 static void update_opacity(VideoState* is, float val)
 {
-    float opacity = 1;
-    SDL_GetWindowOpacity(window, &opacity);
-    opacity += val;
-    if (opacity < 0) {
-        SDL_SetWindowOpacity(window, 0);
-    }
-    else if (opacity > 1) {
-        SDL_SetWindowOpacity(window, 1);
-    }
-    else {
+    // SDL_GetWindowOpacity(window, &opacity);
+    if (opacity + val > 1)
+        opacity = 1;
+    else if (opacity + val > 0)
+        opacity += val;
         SDL_SetWindowOpacity(window, opacity);
-    }
-}
-
-static void enlarge_window(VideoState* is)
-{
-    int x, y;
-    SDL_GetWindowSize(window, &x, &y);
-    SDL_SetWindowSize(window, x * 2, y * 2);
-}
-
-static void shrink_window(VideoState* is)
-{
-    int x, y;
-    SDL_GetWindowSize(window, &x, &y);
-    SDL_SetWindowSize(window, x / 2, y / 2);
 }
 
 static void step_to_next_frame(VideoState* is)
@@ -3207,7 +3187,7 @@ static VideoState* stream_open(const char* filename, AVInputFormat* iformat)
     startup_volume = av_clip(startup_volume, 0, 100);
     startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
     is->audio_volume = startup_volume;
-    is->muted = 0;
+    is->muted = 1;
     is->av_sync_type = av_sync_type;
     is->read_tid = SDL_CreateThread(read_thread, "read_thread", is);
     if (!is->read_tid) {
@@ -3306,11 +3286,39 @@ static void toggle_full_screen(VideoState* is)
     SDL_SetWindowFullscreen(window, is_full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
 
+static void enlarge_window(VideoState* is)
+{
+    int x, y;
+    SDL_DisplayMode DM;
+    SDL_GetCurrentDisplayMode(0, &DM);
+    if (!is_full_screen) {
+        SDL_GetWindowSize(window, &x, &y);
+        if (x * 2 > DM.w || y * 2 > DM.h) {
+            toggle_full_screen(is);
+        }
+        else {
+            SDL_SetWindowSize(window, x * 2, y * 2);
+        }
+    }
+}
+
+static void shrink_window(VideoState* is)
+{
+    int x, y;
+    if (is_full_screen) {
+        toggle_full_screen(is);
+    }
+    else {
+        SDL_GetWindowSize(window, &x, &y);
+        if (x > 1 && y > 1)
+            SDL_SetWindowSize(window, x / 2, y / 2);
+    }
+}
 static void toggle_hidden(VideoState* is)
 {
     if (is_hidden) {
         // SDL_ShowWindow(window);
-        SDL_SetWindowOpacity(window, 1);
+        SDL_SetWindowOpacity(window, opacity);
         is_hidden = 0;
     }
     else {
